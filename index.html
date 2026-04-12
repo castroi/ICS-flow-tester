@@ -1,0 +1,1295 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1,viewport-fit=cover"
+  />
+  <title>ICS Recurrence Flow Tester</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --card: #171a21;
+      --muted: #8b93a7;
+      --text: #e9edf7;
+      --ok: #4cc38a;
+      --warn: #f0c05a;
+      --bad: #ef6b73;
+      --line: #2a3140;
+      --accent: #66a3ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.35;
+      -webkit-text-size-adjust: 100%;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 14px;
+      padding-left: max(14px, env(safe-area-inset-left));
+      padding-right: max(14px, env(safe-area-inset-right));
+      padding-bottom: max(14px, env(safe-area-inset-bottom));
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      overflow: hidden;
+    }
+    h2, h3 { margin: 0 0 8px; }
+    h2 { font-size: clamp(16px, 4vw, 22px); }
+    h3 { font-size: clamp(14px, 3.5vw, 18px); }
+    .muted { color: var(--muted); }
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      resize: vertical;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #0d1016;
+      color: var(--text);
+      padding: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 13px;
+      -webkit-appearance: none;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+      align-items: center;
+    }
+    button, input[type="date"], input[type="file"] {
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #101521;
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 14px;
+      -webkit-appearance: none;
+      min-height: 44px;
+    }
+    input[type="file"] {
+      min-height: auto;
+      padding: 6px 8px;
+      font-size: 12px;
+    }
+    button {
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    button.primary {
+      border-color: #2c4e87;
+      background: #16305a;
+    }
+
+    /* --- Responsive table wrapper --- */
+    .table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 8px -12px 0;
+      padding: 0 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+      padding: 8px 6px;
+      word-break: break-word;
+    }
+    th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+    .pill {
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 12px;
+      display: inline-block;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .p-new { color: var(--ok); border-color: #2f6f54; background: #16392c; }
+    .p-upd { color: var(--warn); border-color: #6e5a2b; background: #3b3117; }
+    .p-del { color: var(--bad); border-color: #6f2f35; background: #3d1a1e; }
+    .p-stale {
+      color: #b3b9ca;
+      border-color: #49516a;
+      background: #252a38;
+    }
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+    }
+    .uid-trunc {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      direction: rtl;
+      text-align: left;
+      max-width: 10ch;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: inline-block;
+      unicode-bidi: plaintext;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 900px) {
+      .grid-2 {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    .small { font-size: 12px; }
+    .ok { color: var(--ok); }
+    .warn { color: var(--warn); }
+    .bad { color: var(--bad); }
+
+    /* --- Mobile-specific overrides (iPhone 17 ~ 402pt wide) --- */
+    @media (max-width: 480px) {
+      .wrap { padding: 10px; }
+      .card { padding: 10px; border-radius: 10px; }
+
+      textarea {
+        min-height: 150px;
+        font-size: 12px;
+      }
+
+      .controls {
+        gap: 6px;
+      }
+      .controls > button,
+      .controls > input[type="date"] {
+        flex: 1 1 auto;
+        min-width: 0;
+        font-size: 13px;
+        padding: 10px 8px;
+        text-align: center;
+      }
+      .controls > label {
+        width: 100%;
+      }
+      .controls > input[type="file"] {
+        width: 100%;
+      }
+
+      /* Stack date controls */
+      .date-row {
+        display: grid;
+        grid-template-columns: auto 1fr auto 1fr;
+        gap: 6px;
+        align-items: center;
+        width: 100%;
+      }
+      .date-row input[type="date"] {
+        width: 100%;
+        min-width: 0;
+      }
+      .date-row + button {
+        width: 100%;
+        margin-top: 4px;
+      }
+
+      /* Card tables: scrollable horizontally */
+      .table-scroll {
+        margin: 8px -10px 0;
+        padding: 0 10px;
+      }
+      table { font-size: 12px; }
+      th, td { padding: 6px 4px; }
+
+      /* Ingest table: stack details on mobile via cards layout */
+      #ingestTable { min-width: 600px; }
+      #renderTable { min-width: 520px; }
+
+      pre#stateDump {
+        font-size: 11px;
+        padding: 8px;
+        max-height: 220px;
+      }
+    }
+
+    /* Very small screens */
+    @media (max-width: 360px) {
+      h2 { font-size: 15px; }
+      h3 { font-size: 13px; }
+      .controls > button { font-size: 12px; padding: 8px 6px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="row">
+      <div class="card">
+        <h2>ICS Flow Tester (Master + Exceptions + EXDATE)</h2>
+        <p class="muted small">
+          Paste one or more ICS payloads, then click Process ICS.
+          Data is persisted in localStorage.
+        </p>
+        <textarea id="icsInput" placeholder="Paste ICS here..."></textarea>
+        <div class="controls">
+          <button id="processBtn" class="primary">Process ICS</button>
+          <button id="clearInputBtn">Clear Input</button>
+          <button id="clearStoreBtn">Clear Stored</button>
+          <button id="exportBtn">Export JSON</button>
+          <label class="small muted" for="importFile">Import Store JSON</label>
+          <input id="importFile" type="file" accept="application/json" />
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Ingest Results</h3>
+          <div id="ingestSummary" class="small muted">No ingest yet.</div>
+          <div class="table-scroll" style="max-height: 320px;">
+            <table id="ingestTable">
+              <thead>
+                <tr>
+                  <th>Action</th>
+                  <th>UID</th>
+                  <th>Anchor (RECURRENCE-ID)</th>
+                  <th>Incoming Details</th>
+                  <th>Replacing</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Render Resolved Occurrences</h3>
+          <div class="controls">
+            <div class="date-row">
+              <label class="small muted">From</label>
+              <input id="fromDate" type="date" />
+              <label class="small muted">To</label>
+              <input id="toDate" type="date" />
+            </div>
+            <button id="renderBtn" class="primary">Render Window</button>
+          </div>
+          <div id="renderSummary" class="small muted" style="margin-top:8px;">
+            No render yet.
+          </div>
+          <div class="table-scroll" style="max-height: 360px;">
+            <table id="renderTable">
+              <thead>
+                <tr>
+                  <th>UID</th>
+                  <th>Anchor</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Title</th>
+                  <th>Place</th>
+                  <th>Source</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Stored Canonical State</h3>
+        <div id="stateStats" class="small muted"></div>
+        <pre id="stateDump" class="mono"
+          style="background:#0d1016;border:1px solid var(--line);
+                 border-radius:10px;padding:10px;overflow:auto;max-height:280px;"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const STORE_KEY = "ics_flow_store_v1";
+
+      const state = loadStore();
+
+      const el = {
+        icsInput: document.getElementById("icsInput"),
+        processBtn: document.getElementById("processBtn"),
+        clearInputBtn: document.getElementById("clearInputBtn"),
+        clearStoreBtn: document.getElementById("clearStoreBtn"),
+        exportBtn: document.getElementById("exportBtn"),
+        importFile: document.getElementById("importFile"),
+        ingestSummary: document.getElementById("ingestSummary"),
+        ingestTableBody: document.querySelector("#ingestTable tbody"),
+        fromDate: document.getElementById("fromDate"),
+        toDate: document.getElementById("toDate"),
+        renderBtn: document.getElementById("renderBtn"),
+        renderSummary: document.getElementById("renderSummary"),
+        renderTableBody: document.querySelector("#renderTable tbody"),
+        stateStats: document.getElementById("stateStats"),
+        stateDump: document.getElementById("stateDump"),
+      };
+
+      initDefaultWindow();
+      wireEvents();
+      refreshStateView();
+
+      /* ---------- helper: truncate UID to last 10 chars ---------- */
+      function truncUid(uid) {
+        if (!uid) return "";
+        if (uid.length <= 10) return uid;
+        return "…" + uid.slice(-10);
+      }
+
+      function wireEvents() {
+        el.processBtn.addEventListener("click", () => {
+          const txt = el.icsInput.value || "";
+          const result = ingestIcsText(txt);
+          renderIngest(result);
+          saveStore();
+          refreshStateView();
+        });
+
+        el.clearInputBtn.addEventListener("click", () => {
+          el.icsInput.value = "";
+        });
+
+        el.clearStoreBtn.addEventListener("click", () => {
+          if (!confirm("Clear all stored canonical data?")) return;
+          state.masters = {};
+          state.exceptions = {};
+          state.dedup = {};
+          saveStore();
+          refreshStateView();
+          el.ingestSummary.textContent = "Store cleared.";
+          el.ingestTableBody.innerHTML = "";
+          el.renderTableBody.innerHTML = "";
+          el.renderSummary.textContent = "No render yet.";
+        });
+
+        el.exportBtn.addEventListener("click", exportStore);
+
+        el.importFile.addEventListener("change", async (e) => {
+          const f = e.target.files && e.target.files[0];
+          if (!f) return;
+          try {
+            const txt = await f.text();
+            const data = JSON.parse(txt);
+            if (!data || typeof data !== "object") {
+              throw new Error("Invalid JSON");
+            }
+            state.masters = data.masters || {};
+            state.exceptions = data.exceptions || {};
+            state.dedup = data.dedup || {};
+            saveStore();
+            refreshStateView();
+            alert("Store imported.");
+          } catch (err) {
+            alert("Import failed: " + String(err.message || err));
+          } finally {
+            e.target.value = "";
+          }
+        });
+
+        el.renderBtn.addEventListener("click", () => {
+          const from = el.fromDate.value;
+          const to = el.toDate.value;
+          if (!from || !to) {
+            alert("Please select from/to date.");
+            return;
+          }
+          const rows = renderWindow(new Date(from + "T00:00:00"),
+                                    new Date(to + "T23:59:59"));
+          drawRenderRows(rows);
+        });
+      }
+
+      function initDefaultWindow() {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        el.fromDate.value = toISODate(start);
+        el.toDate.value = toISODate(end);
+      }
+
+      function loadStore() {
+        try {
+          const raw = localStorage.getItem(STORE_KEY);
+          if (!raw) {
+            return { masters: {}, exceptions: {}, dedup: {} };
+          }
+          const parsed = JSON.parse(raw);
+          return {
+            masters: parsed.masters || {},
+            exceptions: parsed.exceptions || {},
+            dedup: parsed.dedup || {},
+          };
+        } catch (_) {
+          return { masters: {}, exceptions: {}, dedup: {} };
+        }
+      }
+
+      function saveStore() {
+        localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      }
+
+      function exportStore() {
+        const blob = new Blob([JSON.stringify(state, null, 2)], {
+          type: "application/json",
+        });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "ics_flow_store.json";
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+
+      function refreshStateView() {
+        const mCount = Object.keys(state.masters).length;
+        let eCount = 0;
+        for (const uid of Object.keys(state.exceptions)) {
+          eCount += Object.keys(state.exceptions[uid] || {}).length;
+        }
+        const dCount = Object.keys(state.dedup).length;
+
+        el.stateStats.textContent =
+          `Masters: ${mCount} | Exceptions: ${eCount} | Dedup fingerprints: ${dCount}`;
+        el.stateDump.textContent = JSON.stringify(state, null, 2);
+      }
+
+      function ingestIcsText(text) {
+        const trimmed = (text || "").trim();
+        if (!trimmed) {
+          return { ok: false, message: "Empty input.", rows: [] };
+        }
+
+        const unfolded = unfoldIcs(trimmed);
+        const calendars = splitCalendars(unfolded);
+        const rows = [];
+        let processed = 0;
+
+        for (const calText of calendars) {
+          const cal = parseCalendar(calText);
+          if (!cal.vevents.length) continue;
+
+          for (const ve of cal.vevents) {
+            processed++;
+            const incoming = normalizeVevent(cal.method, ve);
+
+            const dedupKey = makeDedupKey(incoming);
+            if (state.dedup[dedupKey]) {
+              rows.push({
+                action: "stale/duplicate",
+                uid: incoming.uid,
+                anchor: incoming.recurrenceIdKey || "",
+                incoming: incoming,
+                replacing: null,
+              });
+              continue;
+            }
+            state.dedup[dedupKey] = true;
+
+            const isExc = !!incoming.recurrenceIdKey;
+            const existing = getExistingRecord(incoming.uid,
+                                               incoming.recurrenceIdKey);
+
+            if (!existing) {
+              upsertIncoming(incoming);
+              rows.push({
+                action: isDeleted(incoming) ? "deleted event" : "new event",
+                uid: incoming.uid,
+                anchor: incoming.recurrenceIdKey || "",
+                incoming,
+                replacing: null,
+              });
+              continue;
+            }
+
+            const win = compareVersion(incoming, existing);
+            if (win <= 0) {
+              rows.push({
+                action: "stale/duplicate",
+                uid: incoming.uid,
+                anchor: incoming.recurrenceIdKey || "",
+                incoming,
+                replacing: existing,
+              });
+              continue;
+            }
+
+            upsertIncoming(incoming);
+            rows.push({
+              action: isDeleted(incoming) ? "deleted event" : "update event",
+              uid: incoming.uid,
+              anchor: incoming.recurrenceIdKey || "",
+              incoming,
+              replacing: existing,
+            });
+          }
+        }
+
+        return {
+          ok: true,
+          message: `Processed VEVENTs: ${processed}`,
+          rows,
+        };
+      }
+
+      function renderIngest(result) {
+        el.ingestSummary.textContent = result.message || "";
+        el.ingestTableBody.innerHTML = "";
+
+        for (const r of result.rows || []) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${actionPill(r.action)}</td>
+            <td><span class="uid-trunc" title="${escapeHtml(r.uid || "")}">${escapeHtml(truncUid(r.uid || ""))}</span></td>
+            <td class="mono">${escapeHtml(r.anchor || "-")}</td>
+            <td>${eventDetailsHtml(r.incoming)}</td>
+            <td>${r.replacing ? eventDetailsHtml(r.replacing) : "-"}</td>
+          `;
+          el.ingestTableBody.appendChild(tr);
+        }
+      }
+
+      function actionPill(action) {
+        let cls = "p-stale";
+        if (action === "new event") cls = "p-new";
+        if (action === "update event") cls = "p-upd";
+        if (action === "deleted event") cls = "p-del";
+        return `<span class="pill ${cls}">${escapeHtml(action)}</span>`;
+      }
+
+      function eventDetailsHtml(e) {
+        const dt = displayDateTime(e);
+        return `
+          <div><strong>Title:</strong> ${escapeHtml(e.summary || "(empty)")}</div>
+          <div><strong>Place:</strong> ${escapeHtml(e.location || "(empty)")}</div>
+          <div><strong>Date/Time:</strong> ${escapeHtml(dt.date)} ${escapeHtml(dt.time)}</div>
+          <div class="small muted mono">SEQUENCE=${e.sequence} DTSTAMP=${escapeHtml(e.dtstampRaw || "")}</div>
+        `;
+      }
+
+      function getExistingRecord(uid, recurrenceIdKey) {
+        if (!uid) return null;
+        if (recurrenceIdKey) {
+          return state.exceptions[uid] && state.exceptions[uid][recurrenceIdKey]
+            ? state.exceptions[uid][recurrenceIdKey]
+            : null;
+        }
+        return state.masters[uid] || null;
+      }
+
+      function upsertIncoming(ev) {
+        if (ev.recurrenceIdKey) {
+          if (!state.exceptions[ev.uid]) state.exceptions[ev.uid] = {};
+          state.exceptions[ev.uid][ev.recurrenceIdKey] = ev;
+          return;
+        }
+        const old = state.masters[ev.uid];
+        state.masters[ev.uid] = ev;
+
+        if (!old && !state.exceptions[ev.uid]) {
+          state.exceptions[ev.uid] = {};
+        }
+      }
+
+      function compareVersion(a, b) {
+        const sa = Number(a.sequence || 0);
+        const sb = Number(b.sequence || 0);
+        if (sa !== sb) return sa > sb ? 1 : -1;
+
+        const da = parseDtstampToEpoch(a.dtstampRaw);
+        const db = parseDtstampToEpoch(b.dtstampRaw);
+        if (da !== db) return da > db ? 1 : -1;
+        return 0;
+      }
+
+      function isDeleted(ev) {
+        const methodCancel = (ev.method || "").toUpperCase() === "CANCEL";
+        const statusCancel = (ev.status || "").toUpperCase() === "CANCELLED";
+        return methodCancel || statusCancel || !!ev.seriesCancelled;
+      }
+
+      function unfoldIcs(text) {
+        const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+        const out = [];
+        for (const ln of lines) {
+          if (!ln) {
+            out.push("");
+            continue;
+          }
+          if ((ln.startsWith(" ") || ln.startsWith("\t")) && out.length) {
+            out[out.length - 1] += ln.slice(1);
+          } else {
+            out.push(ln);
+          }
+        }
+        return out.join("\n");
+      }
+
+      function splitCalendars(text) {
+        const blocks = [];
+        const parts = text.split(/BEGIN:VCALENDAR/i);
+        for (const p of parts) {
+          const t = p.trim();
+          if (!t) continue;
+          const full = "BEGIN:VCALENDAR\n" + t;
+          blocks.push(full);
+        }
+        return blocks.length ? blocks : [text];
+      }
+
+      function parseCalendar(calText) {
+        const lines = calText.split("\n");
+        let method = "";
+        const vevents = [];
+        let cur = null;
+
+        for (const raw of lines) {
+          const line = raw.trimEnd();
+          if (!line) continue;
+
+          if (/^METHOD:/i.test(line) && !cur) {
+            method = line.slice(line.indexOf(":") + 1).trim();
+            continue;
+          }
+
+          if (/^BEGIN:VEVENT/i.test(line)) {
+            cur = { props: {} };
+            continue;
+          }
+
+          if (/^END:VEVENT/i.test(line)) {
+            if (cur) vevents.push(cur);
+            cur = null;
+            continue;
+          }
+
+          if (!cur) continue;
+
+          const parsed = parsePropLine(line);
+          if (!parsed) continue;
+          const { name, params, value } = parsed;
+
+          if (!cur.props[name]) cur.props[name] = [];
+          cur.props[name].push({ params, value });
+        }
+
+        return { method, vevents };
+      }
+
+      function parsePropLine(line) {
+        const idx = line.indexOf(":");
+        if (idx < 0) return null;
+
+        const left = line.slice(0, idx);
+        const value = line.slice(idx + 1);
+
+        const bits = left.split(";");
+        const name = (bits.shift() || "").toUpperCase();
+        const params = {};
+        for (const b of bits) {
+          const eq = b.indexOf("=");
+          if (eq < 0) continue;
+          const k = b.slice(0, eq).toUpperCase();
+          let v = b.slice(eq + 1);
+          if (v.startsWith("\"") && v.endsWith("\"")) {
+            v = v.slice(1, -1);
+          }
+          params[k] = v;
+        }
+        return { name, params, value };
+      }
+
+      function normalizeVevent(method, ve) {
+        const g1 = (name) => {
+          const arr = ve.props[name] || [];
+          return arr.length ? arr[0] : null;
+        };
+        const all = (name) => ve.props[name] || [];
+
+        const uid = (g1("UID")?.value || "").trim();
+        const seq = Number(g1("SEQUENCE")?.value || 0);
+        const dtstampRaw = (g1("DTSTAMP")?.value || "").trim();
+        const status = (g1("STATUS")?.value || "").trim();
+        const summary = (g1("SUMMARY")?.value || "").trim();
+        const location = (g1("LOCATION")?.value || "").trim();
+        const description = (g1("DESCRIPTION")?.value || "").trim();
+
+        const dtstartP = g1("DTSTART");
+        const dtendP = g1("DTEND");
+        const recuridP = g1("RECURRENCE-ID");
+        const rruleP = g1("RRULE");
+
+        const dtstart = parseIcsDateValue(dtstartP?.value || "", dtstartP?.params || {});
+        const dtend = parseIcsDateValue(dtendP?.value || "", dtendP?.params || {});
+        const recurrenceId = parseIcsDateValue(recuridP?.value || "",
+                                              recuridP?.params || {});
+        const recurrenceIdKey = recurrenceId ? recurrenceId.key : "";
+
+        const exdateKeys = [];
+        for (const ex of all("EXDATE")) {
+          const params = ex.params || {};
+          const values = splitExdateValues(ex.value || "");
+          for (const v of values) {
+            const parsed = parseIcsDateValue(v, params);
+            if (parsed) exdateKeys.push(parsed.key);
+          }
+        }
+
+        const seriesCancelled =
+          ((method || "").toUpperCase() === "CANCEL") &&
+          !recurrenceIdKey;
+
+        return {
+          uid,
+          method: (method || "").toUpperCase(),
+          sequence: Number.isFinite(seq) ? seq : 0,
+          dtstampRaw,
+          status: (status || "").toUpperCase(),
+          summary,
+          location,
+          description,
+          dtstart,
+          dtend,
+          recurrenceId,
+          recurrenceIdKey,
+          rrule: (rruleP?.value || "").trim(),
+          exdateKeys: unique(exdateKeys),
+          seriesCancelled,
+          ingestTs: Date.now(),
+        };
+      }
+
+      function splitExdateValues(raw) {
+        return raw.split(",").map(x => x.trim()).filter(Boolean);
+      }
+
+      function parseIcsDateValue(raw, params) {
+        const v = (raw || "").trim();
+        if (!v) return null;
+
+        const tzid = (params.TZID || "").trim();
+        const valueType = (params.VALUE || "").toUpperCase();
+
+        if ((valueType === "DATE") || /^\d{8}$/.test(v)) {
+          const y = Number(v.slice(0, 4));
+          const m = Number(v.slice(4, 6)) - 1;
+          const d = Number(v.slice(6, 8));
+          if (!isFinite(y) || !isFinite(m) || !isFinite(d)) return null;
+          const date = new Date(y, m, d, 0, 0, 0, 0);
+          return {
+            kind: "DATE",
+            raw: v,
+            tzid: "",
+            isUtc: false,
+            key: `D:${v}`,
+            epoch: date.getTime(),
+            y, m, d, hh: 0, mm: 0, ss: 0
+          };
+        }
+
+        const isUtc = v.endsWith("Z");
+        const base = isUtc ? v.slice(0, -1) : v;
+        const norm = base.replace(/[-:]/g, "");
+        const m = norm.match(
+          /^(\d{4})(\d{2})(\d{2})T?(\d{2})(\d{2})(\d{2})?$/
+        );
+        if (!m) return null;
+
+        const y = Number(m[1]);
+        const mo = Number(m[2]) - 1;
+        const d = Number(m[3]);
+        const hh = Number(m[4]);
+        const mm = Number(m[5]);
+        const ss = Number(m[6] || "0");
+
+        let epoch = 0;
+        if (isUtc) {
+          epoch = Date.UTC(y, mo, d, hh, mm, ss, 0);
+        } else {
+          epoch = new Date(y, mo, d, hh, mm, ss, 0).getTime();
+        }
+
+        const key = isUtc
+          ? `Z:${y}${pad2(mo + 1)}${pad2(d)}T${pad2(hh)}${pad2(mm)}${pad2(ss)}Z`
+          : (tzid
+              ? `T:${tzid}:${y}${pad2(mo + 1)}${pad2(d)}T${pad2(hh)}${pad2(mm)}${pad2(ss)}`
+              : `F:${y}${pad2(mo + 1)}${pad2(d)}T${pad2(hh)}${pad2(mm)}${pad2(ss)}`);
+
+        return {
+          kind: "DATE-TIME",
+          raw: v,
+          tzid,
+          isUtc,
+          key,
+          epoch,
+          y, m: mo, d, hh, mm, ss
+        };
+      }
+
+      function parseDtstampToEpoch(raw) {
+        if (!raw) return 0;
+        const p = parseIcsDateValue(raw, {});
+        return p ? p.epoch : 0;
+      }
+
+      function makeDedupKey(ev) {
+        return [
+          ev.uid,
+          ev.recurrenceIdKey || "-",
+          String(ev.sequence || 0),
+          ev.dtstampRaw || "-",
+          ev.method || "-",
+          ev.status || "-",
+          ev.dtstart?.key || "-",
+          ev.dtend?.key || "-",
+          ev.rrule || "-",
+          (ev.exdateKeys || []).join("|"),
+        ].join("~");
+      }
+
+      function renderWindow(fromDate, toDate) {
+        const fromMs = fromDate.getTime();
+        const toMs = toDate.getTime();
+        const out = [];
+
+        for (const uid of Object.keys(state.masters)) {
+          const master = state.masters[uid];
+          if (!master || isDeleted(master)) continue;
+
+          const exMap = state.exceptions[uid] || {};
+          const exdateSet = new Set(master.exdateKeys || []);
+          const durationMs = getDurationMs(master);
+
+          let anchors = [];
+          if (master.rrule) {
+            anchors = generateAnchorsForWindow(master, fromDate, toDate);
+          } else if (master.dtstart) {
+            anchors = [master.dtstart];
+          }
+
+          const genAnchorKeys = new Set(anchors.map(a => a.key));
+
+          for (const a of anchors) {
+            const ex = exMap[a.key];
+
+            if (ex && isDeleted(ex)) continue;
+
+            if (ex && !isDeleted(ex)) {
+              const start = ex.dtstart || a;
+              const end = ex.dtend || addDuration(start, durationMs);
+              if (withinWindow(start, fromMs, toMs)) {
+                out.push(makeRow(uid, a.key, start, end, ex, "exception"));
+              }
+              continue;
+            }
+
+            if (exdateSet.has(a.key)) continue;
+
+            const start = a;
+            const end = addDuration(a, durationMs);
+            if (withinWindow(start, fromMs, toMs)) {
+              out.push(makeRow(uid, a.key, start, end, master, "master"));
+            }
+          }
+
+          for (const aKey of Object.keys(exMap)) {
+            const ex = exMap[aKey];
+            if (!ex || isDeleted(ex) || !ex.dtstart) continue;
+            if (genAnchorKeys.has(aKey)) continue;
+            if (withinWindow(ex.dtstart, fromMs, toMs)) {
+              out.push(makeRow(uid, aKey, ex.dtstart, ex.dtend || null,
+                               ex, "orphan-exception"));
+            }
+          }
+        }
+
+        for (const uid of Object.keys(state.exceptions)) {
+          if (state.masters[uid]) continue;
+          const exMap = state.exceptions[uid] || {};
+          for (const aKey of Object.keys(exMap)) {
+            const ex = exMap[aKey];
+            if (!ex || isDeleted(ex) || !ex.dtstart) continue;
+            if (withinWindow(ex.dtstart, fromMs, toMs)) {
+              out.push(makeRow(uid, aKey, ex.dtstart, ex.dtend || null,
+                               ex, "orphan-no-master"));
+            }
+          }
+        }
+
+        out.sort((a, b) => (a.startEpoch - b.startEpoch) ||
+                           a.uid.localeCompare(b.uid));
+        return out;
+      }
+
+      function makeRow(uid, anchorKey, start, end, src, sourceType) {
+        const d = fmtDate(start);
+        const t = fmtTimeRange(start, end);
+        return {
+          uid,
+          anchorKey,
+          date: d,
+          time: t,
+          title: src.summary || "",
+          place: src.location || "",
+          source: sourceType,
+          startEpoch: start.epoch || 0,
+        };
+      }
+
+      function drawRenderRows(rows) {
+        el.renderTableBody.innerHTML = "";
+        el.renderSummary.textContent = `Resolved rows: ${rows.length}`;
+        for (const r of rows) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><span class="uid-trunc" title="${escapeHtml(r.uid)}">${escapeHtml(truncUid(r.uid))}</span></td>
+            <td class="mono">${escapeHtml(r.anchorKey)}</td>
+            <td>${escapeHtml(r.date)}</td>
+            <td>${escapeHtml(r.time)}</td>
+            <td>${escapeHtml(r.title || "(empty)")}</td>
+            <td>${escapeHtml(r.place || "(empty)")}</td>
+            <td>${escapeHtml(r.source)}</td>
+          `;
+          el.renderTableBody.appendChild(tr);
+        }
+      }
+
+      function generateAnchorsForWindow(master, fromDate, toDate) {
+        const dtstart = master.dtstart;
+        if (!dtstart) return [];
+
+        const rule = parseRrule(master.rrule || "");
+        if (!rule.FREQ) return [];
+
+        const anchors = [];
+        const max = 20000;
+
+        const fromMs = fromDate.getTime();
+        const toMs = toDate.getTime();
+
+        const start = compToDate(dtstart);
+        const until = rule.UNTIL ? parseRruleUntil(rule.UNTIL) : null;
+
+        if (rule.FREQ === "DAILY") {
+          let cur = new Date(start.getTime());
+          let n = 0;
+          while (n < max) {
+            if (until && cur.getTime() > until.getTime()) break;
+            const c = fromDateToCompLike(dtstart, cur);
+            if (c.epoch >= fromMs && c.epoch <= toMs) anchors.push(c);
+            if (c.epoch > toMs && n > 5) break;
+            cur.setDate(cur.getDate() + (rule.INTERVAL || 1));
+            n++;
+            if (rule.COUNT && n >= rule.COUNT) break;
+          }
+          return anchors;
+        }
+
+        if (rule.FREQ === "WEEKLY") {
+          const byday = (rule.BYDAY && rule.BYDAY.length)
+            ? rule.BYDAY
+            : [weekdayCode(start.getDay())];
+
+          let curWeekStart = startOfWeek(start);
+          let produced = 0;
+          let loops = 0;
+          while (loops < max) {
+            for (const wd of byday) {
+              const d = new Date(curWeekStart.getTime());
+              d.setDate(d.getDate() + weekdayToIdx(wd));
+              d.setHours(start.getHours(), start.getMinutes(),
+                         start.getSeconds(), 0);
+
+              if (d.getTime() < start.getTime()) continue;
+              if (until && d.getTime() > until.getTime()) continue;
+
+              produced++;
+              const c = fromDateToCompLike(dtstart, d);
+              if (c.epoch >= fromMs && c.epoch <= toMs) anchors.push(c);
+              if (rule.COUNT && produced >= rule.COUNT) return anchors;
+            }
+
+            if (curWeekStart.getTime() > toMs && loops > 5) break;
+            curWeekStart.setDate(curWeekStart.getDate() + 7 * (rule.INTERVAL || 1));
+            loops++;
+          }
+          return uniqueByKey(anchors);
+        }
+
+        if (rule.FREQ === "MONTHLY") {
+          const monthDays = (rule.BYMONTHDAY && rule.BYMONTHDAY.length)
+            ? rule.BYMONTHDAY
+            : [start.getDate()];
+
+          let cur = new Date(start.getTime());
+          let count = 0;
+          let loops = 0;
+          while (loops < max) {
+            const y = cur.getFullYear();
+            const m = cur.getMonth();
+
+            for (const md of monthDays) {
+              const d = new Date(y, m, md,
+                                 start.getHours(), start.getMinutes(),
+                                 start.getSeconds(), 0);
+              if (d.getMonth() !== m) continue;
+              if (d.getTime() < start.getTime()) continue;
+              if (until && d.getTime() > until.getTime()) continue;
+
+              count++;
+              const c = fromDateToCompLike(dtstart, d);
+              if (c.epoch >= fromMs && c.epoch <= toMs) anchors.push(c);
+              if (rule.COUNT && count >= rule.COUNT) return anchors;
+            }
+
+            if (cur.getTime() > toMs && loops > 2) break;
+            cur.setMonth(cur.getMonth() + (rule.INTERVAL || 1), 1);
+            loops++;
+          }
+          return uniqueByKey(anchors);
+        }
+
+        if (rule.FREQ === "YEARLY") {
+          const bymonth = (rule.BYMONTH && rule.BYMONTH.length)
+            ? rule.BYMONTH
+            : [start.getMonth() + 1];
+          const bymonthday = (rule.BYMONTHDAY && rule.BYMONTHDAY.length)
+            ? rule.BYMONTHDAY
+            : [start.getDate()];
+
+          let y = start.getFullYear();
+          let count = 0;
+          let loops = 0;
+          while (loops < max) {
+            for (const mo of bymonth) {
+              for (const md of bymonthday) {
+                const d = new Date(y, mo - 1, md,
+                                   start.getHours(), start.getMinutes(),
+                                   start.getSeconds(), 0);
+                if (d.getMonth() !== (mo - 1)) continue;
+                if (d.getTime() < start.getTime()) continue;
+                if (until && d.getTime() > until.getTime()) continue;
+
+                count++;
+                const c = fromDateToCompLike(dtstart, d);
+                if (c.epoch >= fromMs && c.epoch <= toMs) anchors.push(c);
+                if (rule.COUNT && count >= rule.COUNT) return anchors;
+              }
+            }
+            if (y > toDate.getFullYear() + 1) break;
+            y += (rule.INTERVAL || 1);
+            loops++;
+          }
+          return uniqueByKey(anchors);
+        }
+
+        return [];
+      }
+
+      function parseRrule(raw) {
+        const out = {};
+        if (!raw) return out;
+        const parts = raw.split(";");
+        for (const p of parts) {
+          const i = p.indexOf("=");
+          if (i < 0) continue;
+          const k = p.slice(0, i).toUpperCase().trim();
+          const v = p.slice(i + 1).trim();
+
+          if (k === "FREQ") out.FREQ = v.toUpperCase();
+          else if (k === "INTERVAL") out.INTERVAL = Number(v) || 1;
+          else if (k === "COUNT") out.COUNT = Number(v) || 0;
+          else if (k === "UNTIL") out.UNTIL = v;
+          else if (k === "BYDAY") out.BYDAY = v.split(",").map(x => x.trim().toUpperCase());
+          else if (k === "BYMONTHDAY") out.BYMONTHDAY =
+            v.split(",").map(x => Number(x.trim())).filter(n => Number.isFinite(n));
+          else if (k === "BYMONTH") out.BYMONTH =
+            v.split(",").map(x => Number(x.trim())).filter(n => Number.isFinite(n));
+          else out[k] = v;
+        }
+        if (!out.INTERVAL) out.INTERVAL = 1;
+        return out;
+      }
+
+      function parseRruleUntil(untilRaw) {
+        const p = parseIcsDateValue(untilRaw, {});
+        return p ? new Date(p.epoch) : null;
+      }
+
+      function getDurationMs(master) {
+        if (!master.dtstart || !master.dtend) {
+          return master.dtstart && master.dtstart.kind === "DATE"
+            ? 24 * 60 * 60 * 1000
+            : 60 * 60 * 1000;
+        }
+        return Math.max(0, (master.dtend.epoch - master.dtstart.epoch));
+      }
+
+      function addDuration(startComp, ms) {
+        const d = new Date((startComp.epoch || 0) + ms);
+        return fromDateToCompLike(startComp, d);
+      }
+
+      function withinWindow(comp, fromMs, toMs) {
+        const t = comp?.epoch || 0;
+        return t >= fromMs && t <= toMs;
+      }
+
+      function compToDate(comp) {
+        return new Date(comp.epoch || 0);
+      }
+
+      function fromDateToCompLike(template, date) {
+        const y = date.getFullYear();
+        const m = date.getMonth();
+        const d = date.getDate();
+        const hh = date.getHours();
+        const mm = date.getMinutes();
+        const ss = date.getSeconds();
+
+        if (template.kind === "DATE") {
+          const raw = `${y}${pad2(m + 1)}${pad2(d)}`;
+          return {
+            kind: "DATE",
+            raw,
+            tzid: "",
+            isUtc: false,
+            key: `D:${raw}`,
+            epoch: new Date(y, m, d, 0, 0, 0, 0).getTime(),
+            y, m, d, hh: 0, mm: 0, ss: 0
+          };
+        }
+
+        if (template.isUtc) {
+          const uy = date.getUTCFullYear();
+          const um = date.getUTCMonth();
+          const ud = date.getUTCDate();
+          const uh = date.getUTCHours();
+          const umin = date.getUTCMinutes();
+          const us = date.getUTCSeconds();
+          const raw =
+            `${uy}${pad2(um + 1)}${pad2(ud)}T${pad2(uh)}${pad2(umin)}${pad2(us)}Z`;
+          return {
+            kind: "DATE-TIME",
+            raw,
+            tzid: "",
+            isUtc: true,
+            key: `Z:${raw}`,
+            epoch: Date.UTC(uy, um, ud, uh, umin, us, 0),
+            y: uy, m: um, d: ud, hh: uh, mm: umin, ss: us
+          };
+        }
+
+        const raw = `${y}${pad2(m + 1)}${pad2(d)}T${pad2(hh)}${pad2(mm)}${pad2(ss)}`;
+        const key = template.tzid
+          ? `T:${template.tzid}:${raw}`
+          : `F:${raw}`;
+
+        return {
+          kind: "DATE-TIME",
+          raw,
+          tzid: template.tzid || "",
+          isUtc: false,
+          key,
+          epoch: date.getTime(),
+          y, m, d, hh, mm, ss
+        };
+      }
+
+      function startOfWeek(d) {
+        const x = new Date(d.getTime());
+        const day = x.getDay();
+        x.setDate(x.getDate() - day);
+        x.setHours(0, 0, 0, 0);
+        return x;
+      }
+
+      function weekdayToIdx(code) {
+        return { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 }[code] ?? 0;
+      }
+
+      function weekdayCode(idx) {
+        return ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][idx] || "SU";
+      }
+
+      function unique(arr) {
+        return Array.from(new Set(arr));
+      }
+
+      function uniqueByKey(arr) {
+        const m = new Map();
+        for (const x of arr) m.set(x.key, x);
+        return Array.from(m.values());
+      }
+
+      function displayDateTime(ev) {
+        if (!ev || !ev.dtstart) return { date: "-", time: "-" };
+        return {
+          date: fmtDate(ev.dtstart),
+          time: fmtTimeRange(ev.dtstart, ev.dtend || null),
+        };
+      }
+
+      function fmtDate(comp) {
+        if (!comp) return "-";
+        const d = new Date(comp.epoch || 0);
+        return d.toLocaleDateString();
+      }
+
+      function fmtTimeRange(start, end) {
+        if (!start) return "-";
+        if (start.kind === "DATE") return "all-day";
+
+        const s = new Date(start.epoch || 0);
+        const sTxt = s.toLocaleTimeString([], { hour: "2-digit",
+                                                minute: "2-digit" });
+
+        if (!end) return sTxt;
+        const e = new Date(end.epoch || 0);
+        const eTxt = e.toLocaleTimeString([], { hour: "2-digit",
+                                                minute: "2-digit" });
+        return `${sTxt} - ${eTxt}`;
+      }
+
+      function toISODate(d) {
+        return [
+          d.getFullYear(),
+          pad2(d.getMonth() + 1),
+          pad2(d.getDate()),
+        ].join("-");
+      }
+
+      function pad2(n) {
+        return String(n).padStart(2, "0");
+      }
+
+      function escapeHtml(s) {
+        return String(s)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+    })();
+  </script>
+</body>
+</html>
