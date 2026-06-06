@@ -510,7 +510,7 @@
             </div>
             <div class="small">${escapeHtml(r.time)}</div>
             <div class="small muted">${escapeHtml(r.place || "")}</div>
-            <div class="small muted mono">UID: ${escapeHtml(r.uid)}</div>
+            <div class="small muted mono">UID: ${escapeHtml(shortUid(r.uid))}</div>
             <div class="controls" style="margin-top:6px;">
               <button class="danger" data-uid="${escapeHtml(r.uid)}"
                       data-anchor="${escapeHtml(r.anchorKey)}"
@@ -1438,6 +1438,10 @@
 
       function pad2(n) {
         return String(n).padStart(2, "0");
+      }
+      function shortUid(uid) {
+        const s = String(uid || "");
+        return s.length > 15 ? s.slice(0, 15) + "…" : s;
       }
 
       function escapeHtml(s) {
