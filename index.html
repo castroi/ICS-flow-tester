@@ -313,7 +313,14 @@
       let currentMonth = new Date();
       currentMonth.setDate(1);
       let selectedDate = new Date();
+      let addDateDirty = false;
 
+      function setAddDateFromSelected(force = false) {
+        if (force) addDateDirty = false;
+        if (!addDateDirty) {
+          el.addDate.value = toISODate(selectedDate);
+        }
+      }
       wireEvents();
       refreshStateView();
       renderCalendar();
@@ -331,10 +338,17 @@
           currentMonth = new Date();
           currentMonth.setDate(1);
           selectedDate = new Date();
+          setAddDateFromSelected(true);
           renderCalendar();
         });
 
+        el.addDate.addEventListener("input", () => {
+          addDateDirty = true;
+        });
         el.addEventBtn.addEventListener("click", addEventFromForm);
+        el.addDate.addEventListener("input", () => {
+          addDateDirty = true;
+        });
 
         el.processBtn.addEventListener("click", () => {
           const txt = el.icsInput.value || "";
@@ -478,6 +492,7 @@
           `;
           div.addEventListener("click", () => {
             selectedDate = new Date(d.getTime());
+            setAddDateFromSelected();
             renderCalendar();
           });
           el.calendarGrid.appendChild(div);
