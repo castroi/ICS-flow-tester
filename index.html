@@ -6,7 +6,7 @@
     name="viewport"
     content="width=device-width,initial-scale=1,viewport-fit=cover"
   />
-  <title>ICS Recurrence Flow Tester</title>
+  <title>ICS Flow Tester + Month View</title>
   <style>
     :root {
       --bg: #0f1115;
@@ -18,6 +18,8 @@
       --bad: #ef6b73;
       --line: #2a3140;
       --accent: #66a3ff;
+      --dot: #f19aa3;
+      --sel: #7a5f2d;
     }
     * { box-sizing: border-box; }
     body {
@@ -26,18 +28,14 @@
       background: var(--bg);
       color: var(--text);
       line-height: 1.35;
-      -webkit-text-size-adjust: 100%;
     }
     .wrap {
       max-width: 1100px;
       margin: 0 auto;
       padding: 14px;
-      padding-left: max(14px, env(safe-area-inset-left));
-      padding-right: max(14px, env(safe-area-inset-right));
-      padding-bottom: max(14px, env(safe-area-inset-bottom));
     }
     .row {
-      display: grid;
+      
       grid-template-columns: 1fr;
       gap: 12px;
     }
@@ -46,15 +44,12 @@
       border: 1px solid var(--line);
       border-radius: 12px;
       padding: 12px;
-      overflow: hidden;
     }
     h2, h3 { margin: 0 0 8px; }
-    h2 { font-size: clamp(16px, 4vw, 22px); }
-    h3 { font-size: clamp(14px, 3.5vw, 18px); }
     .muted { color: var(--muted); }
     textarea {
       width: 100%;
-      min-height: 180px;
+      min-height: 200px;
       resize: vertical;
       border-radius: 10px;
       border: 1px solid var(--line);
@@ -62,8 +57,7 @@
       color: var(--text);
       padding: 10px;
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 13px;
-      -webkit-appearance: none;
+      font-size: 12px;
     }
     .controls {
       display: flex;
@@ -72,38 +66,24 @@
       margin-top: 8px;
       align-items: center;
     }
-    button, input[type="date"], input[type="file"] {
+    button, input[type="date"], input[type="file"],
+    input[type="time"], input[type="text"], input[type="number"] {
       border-radius: 10px;
       border: 1px solid var(--line);
       background: #101521;
       color: var(--text);
-      padding: 10px 12px;
+      padding: 8px 10px;
       font-size: 14px;
-      -webkit-appearance: none;
-      min-height: 44px;
     }
-    input[type="file"] {
-      min-height: auto;
-      padding: 6px 8px;
-      font-size: 12px;
-    }
-    button {
-      cursor: pointer;
-      touch-action: manipulation;
-    }
+    button { cursor: pointer; }
     button.primary {
       border-color: #2c4e87;
       background: #16305a;
     }
-
-    /* --- Responsive table wrapper --- */
-    .table-scroll {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      margin: 8px -12px 0;
-      padding: 0 12px;
+    button.danger {
+      border-color: #6f2f35;
+      background: #3d1a1e;
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
@@ -116,14 +96,13 @@
       padding: 8px 6px;
       word-break: break-word;
     }
-    th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+    th { color: var(--muted); font-weight: 600; }
     .pill {
       padding: 2px 7px;
       border-radius: 999px;
       font-size: 12px;
       display: inline-block;
       border: 1px solid transparent;
-      white-space: nowrap;
     }
     .p-new { color: var(--ok); border-color: #2f6f54; background: #16392c; }
     .p-upd { color: var(--warn); border-color: #6e5a2b; background: #3b3117; }
@@ -137,102 +116,71 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       font-size: 12px;
     }
-    .uid-trunc {
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 12px;
-      direction: rtl;
-      text-align: left;
-      max-width: 10ch;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      display: inline-block;
-      unicode-bidi: plaintext;
-    }
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr;
       gap: 12px;
     }
     @media (min-width: 900px) {
-      .grid-2 {
-        grid-template-columns: 1fr 1fr;
-      }
+      .grid-2 { grid-template-columns: 1fr 1fr; }
     }
     .small { font-size: 12px; }
-    .ok { color: var(--ok); }
-    .warn { color: var(--warn); }
-    .bad { color: var(--bad); }
-
-    /* --- Mobile-specific overrides (iPhone 17 ~ 402pt wide) --- */
-    @media (max-width: 480px) {
-      .wrap { padding: 10px; }
-      .card { padding: 10px; border-radius: 10px; }
-
-      textarea {
-        min-height: 150px;
-        font-size: 12px;
-      }
-
-      .controls {
-        gap: 6px;
-      }
-      .controls > button,
-      .controls > input[type="date"] {
-        flex: 1 1 auto;
-        min-width: 0;
-        font-size: 13px;
-        padding: 10px 8px;
-        text-align: center;
-      }
-      .controls > label {
-        width: 100%;
-      }
-      .controls > input[type="file"] {
-        width: 100%;
-      }
-
-      /* Stack date controls */
-      .date-row {
-        display: grid;
-        grid-template-columns: auto 1fr auto 1fr;
-        gap: 6px;
-        align-items: center;
-        width: 100%;
-      }
-      .date-row input[type="date"] {
-        width: 100%;
-        min-width: 0;
-      }
-      .date-row + button {
-        width: 100%;
-        margin-top: 4px;
-      }
-
-      /* Card tables: scrollable horizontally */
-      .table-scroll {
-        margin: 8px -10px 0;
-        padding: 0 10px;
-      }
-      table { font-size: 12px; }
-      th, td { padding: 6px 4px; }
-
-      /* Ingest table: stack details on mobile via cards layout */
-      #ingestTable { min-width: 600px; }
-      #renderTable { min-width: 520px; }
-
-      pre#stateDump {
-        font-size: 11px;
-        padding: 8px;
-        max-height: 220px;
-      }
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
     }
-
-    /* Very small screens */
-    @media (max-width: 360px) {
-      h2 { font-size: 15px; }
-      h3 { font-size: 13px; }
-      .controls > button { font-size: 12px; padding: 8px 6px; }
+    .cal-header {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .cal-cell {
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 6px;
+      position: relative;
+      cursor: pointer;
+      background: #0f141f;
+    }
+    .cal-cell.dim { opacity: 0.45; }
+    .cal-cell.selected {
+      outline: 2px solid #5a4a24;
+      background: #1a1a16;
+    }
+    .cal-date {
+      font-size: 13px;
+    }
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--dot);
+      position: absolute;
+      left: 8px;
+      bottom: 8px;
+    }
+    .event-list {
+      display: grid;
+      gap: 8px;
+    }
+    .event-item {
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #111623;
+    }
+    .badge {
+      padding: 2px 6px;
+      border-radius: 8px;
+      font-size: 11px;
+      background: #222a3a;
+      color: var(--muted);
+      margin-left: 6px;
     }
   </style>
 </head>
@@ -240,17 +188,54 @@
   <div class="wrap">
     <div class="row">
       <div class="card">
-        <h2>ICS Flow Tester (Master + Exceptions + EXDATE)</h2>
+        <h2>Month View</h2>
+        <div class="controls" style="justify-content: space-between;">
+          <div class="controls">
+            <button id="prevMonthBtn">◀</button>
+            <div id="monthLabel" class="mono"></div>
+            <button id="nextMonthBtn">▶</button>
+          </div>
+          <button id="todayBtn">Today</button>
+        </div>
+        <div class="cal-header">
+          <div>S</div><div>M</div><div>T</div><div>W</div>
+          <div>T</div><div>F</div><div>S</div>
+        </div>
+        <div id="calendarGrid" class="calendar"></div>
+
+        <div class="card" style="margin-top: 12px;">
+          <h3 id="selectedDateLabel">Selected Day</h3>
+          <div id="selectedDayEvents" class="event-list"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Add Event</h3>
+        <div class="controls">
+          <input id="addTitle" type="text" placeholder="Title" />
+          <input id="addLocation" type="text" placeholder="Location" />
+          <input id="addDate" type="date" />
+          <input id="addTime" type="time" />
+          <input id="addDuration" type="number" min="5" step="5"
+                 placeholder="Duration (min)" />
+          <label class="small muted">
+            <input id="addAllDay" type="checkbox" /> All-day
+          </label>
+          <button id="addEventBtn" class="primary">Add</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>ICS Ingest</h2>
         <p class="muted small">
-          Paste one or more ICS payloads, then click Process ICS.
-          Data is persisted in localStorage.
+          Paste one or more ICS payloads. Data is stored in localStorage.
         </p>
         <textarea id="icsInput" placeholder="Paste ICS here..."></textarea>
         <div class="controls">
           <button id="processBtn" class="primary">Process ICS</button>
           <button id="clearInputBtn">Clear Input</button>
-          <button id="clearStoreBtn">Clear Stored</button>
-          <button id="exportBtn">Export JSON</button>
+          <button id="clearStoreBtn" class="danger">Clear Stored Data</button>
+          <button id="exportBtn">Export Store JSON</button>
           <label class="small muted" for="importFile">Import Store JSON</label>
           <input id="importFile" type="file" accept="application/json" />
         </div>
@@ -260,13 +245,13 @@
         <div class="card">
           <h3>Ingest Results</h3>
           <div id="ingestSummary" class="small muted">No ingest yet.</div>
-          <div class="table-scroll" style="max-height: 320px;">
+          <div style="overflow:auto; max-height: 320px; margin-top: 8px;">
             <table id="ingestTable">
               <thead>
                 <tr>
                   <th>Action</th>
                   <th>UID</th>
-                  <th>Anchor (RECURRENCE-ID)</th>
+                  <th>Anchor</th>
                   <th>Incoming Details</th>
                   <th>Replacing</th>
                 </tr>
@@ -277,44 +262,13 @@
         </div>
 
         <div class="card">
-          <h3>Render Resolved Occurrences</h3>
-          <div class="controls">
-            <div class="date-row">
-              <label class="small muted">From</label>
-              <input id="fromDate" type="date" />
-              <label class="small muted">To</label>
-              <input id="toDate" type="date" />
-            </div>
-            <button id="renderBtn" class="primary">Render Window</button>
-          </div>
-          <div id="renderSummary" class="small muted" style="margin-top:8px;">
-            No render yet.
-          </div>
-          <div class="table-scroll" style="max-height: 360px;">
-            <table id="renderTable">
-              <thead>
-                <tr>
-                  <th>UID</th>
-                  <th>Anchor</th>
-                  <th>Date</th>
-                  <th>Time</th>
-                  <th>Title</th>
-                  <th>Place</th>
-                  <th>Source</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
+          <h3>Stored Canonical State</h3>
+          <div id="stateStats" class="small muted"></div>
+          <pre id="stateDump" class="mono"
+            style="background:#0d1016;border:1px solid var(--line);
+                   border-radius:10px;padding:10px;overflow:auto;max-height:280px;">
+          </pre>
         </div>
-      </div>
-
-      <div class="card">
-        <h3>Stored Canonical State</h3>
-        <div id="stateStats" class="small muted"></div>
-        <pre id="stateDump" class="mono"
-          style="background:#0d1016;border:1px solid var(--line);
-                 border-radius:10px;padding:10px;overflow:auto;max-height:280px;"></pre>
       </div>
     </div>
   </div>
@@ -323,11 +277,27 @@
     (() => {
       "use strict";
 
-      const STORE_KEY = "ics_flow_store_v1";
+      const STORE_KEY = "ics_flow_store_v2";
 
       const state = loadStore();
 
       const el = {
+        calendarGrid: document.getElementById("calendarGrid"),
+        monthLabel: document.getElementById("monthLabel"),
+        prevMonthBtn: document.getElementById("prevMonthBtn"),
+        nextMonthBtn: document.getElementById("nextMonthBtn"),
+        todayBtn: document.getElementById("todayBtn"),
+        selectedDateLabel: document.getElementById("selectedDateLabel"),
+        selectedDayEvents: document.getElementById("selectedDayEvents"),
+
+        addTitle: document.getElementById("addTitle"),
+        addLocation: document.getElementById("addLocation"),
+        addDate: document.getElementById("addDate"),
+        addTime: document.getElementById("addTime"),
+        addDuration: document.getElementById("addDuration"),
+        addAllDay: document.getElementById("addAllDay"),
+        addEventBtn: document.getElementById("addEventBtn"),
+
         icsInput: document.getElementById("icsInput"),
         processBtn: document.getElementById("processBtn"),
         clearInputBtn: document.getElementById("clearInputBtn"),
@@ -336,33 +306,43 @@
         importFile: document.getElementById("importFile"),
         ingestSummary: document.getElementById("ingestSummary"),
         ingestTableBody: document.querySelector("#ingestTable tbody"),
-        fromDate: document.getElementById("fromDate"),
-        toDate: document.getElementById("toDate"),
-        renderBtn: document.getElementById("renderBtn"),
-        renderSummary: document.getElementById("renderSummary"),
-        renderTableBody: document.querySelector("#renderTable tbody"),
         stateStats: document.getElementById("stateStats"),
         stateDump: document.getElementById("stateDump"),
       };
 
-      initDefaultWindow();
+      let currentMonth = new Date();
+      currentMonth.setDate(1);
+      let selectedDate = new Date();
+
       wireEvents();
       refreshStateView();
-
-      /* ---------- helper: truncate UID to last 10 chars ---------- */
-      function truncUid(uid) {
-        if (!uid) return "";
-        if (uid.length <= 10) return uid;
-        return "…" + uid.slice(-10);
-      }
+      renderCalendar();
 
       function wireEvents() {
+        el.prevMonthBtn.addEventListener("click", () => {
+          currentMonth.setMonth(currentMonth.getMonth() - 1, 1);
+          renderCalendar();
+        });
+        el.nextMonthBtn.addEventListener("click", () => {
+          currentMonth.setMonth(currentMonth.getMonth() + 1, 1);
+          renderCalendar();
+        });
+        el.todayBtn.addEventListener("click", () => {
+          currentMonth = new Date();
+          currentMonth.setDate(1);
+          selectedDate = new Date();
+          renderCalendar();
+        });
+
+        el.addEventBtn.addEventListener("click", addEventFromForm);
+
         el.processBtn.addEventListener("click", () => {
           const txt = el.icsInput.value || "";
           const result = ingestIcsText(txt);
           renderIngest(result);
           saveStore();
           refreshStateView();
+          renderCalendar();
         });
 
         el.clearInputBtn.addEventListener("click", () => {
@@ -376,10 +356,9 @@
           state.dedup = {};
           saveStore();
           refreshStateView();
+          renderCalendar();
           el.ingestSummary.textContent = "Store cleared.";
           el.ingestTableBody.innerHTML = "";
-          el.renderTableBody.innerHTML = "";
-          el.renderSummary.textContent = "No render yet.";
         });
 
         el.exportBtn.addEventListener("click", exportStore);
@@ -390,14 +369,12 @@
           try {
             const txt = await f.text();
             const data = JSON.parse(txt);
-            if (!data || typeof data !== "object") {
-              throw new Error("Invalid JSON");
-            }
             state.masters = data.masters || {};
             state.exceptions = data.exceptions || {};
             state.dedup = data.dedup || {};
             saveStore();
             refreshStateView();
+            renderCalendar();
             alert("Store imported.");
           } catch (err) {
             alert("Import failed: " + String(err.message || err));
@@ -405,26 +382,227 @@
             e.target.value = "";
           }
         });
-
-        el.renderBtn.addEventListener("click", () => {
-          const from = el.fromDate.value;
-          const to = el.toDate.value;
-          if (!from || !to) {
-            alert("Please select from/to date.");
-            return;
-          }
-          const rows = renderWindow(new Date(from + "T00:00:00"),
-                                    new Date(to + "T23:59:59"));
-          drawRenderRows(rows);
-        });
       }
 
-      function initDefaultWindow() {
+      function addEventFromForm() {
+        const title = el.addTitle.value.trim();
+        const location = el.addLocation.value.trim();
+        const date = el.addDate.value;
+        const time = el.addTime.value;
+        const duration = Number(el.addDuration.value || 60);
+        const allDay = el.addAllDay.checked;
+
+        if (!date) {
+          alert("Please select a date.");
+          return;
+        }
+
+        const uid = "manual-" + Date.now() + "-" + Math.random().toString(36)
+          .slice(2, 8);
+
+        const dtstart = allDay
+          ? parseIcsDateValue(date.replaceAll("-", ""), { VALUE: "DATE" })
+          : parseIcsDateValue(
+              date.replaceAll("-", "") + "T" +
+              (time || "09:00") + "00",
+              {}
+            );
+
+        const dtend = allDay
+          ? null
+          : addDuration(dtstart, duration * 60 * 1000);
+
         const now = new Date();
-        const start = new Date(now.getFullYear(), now.getMonth(), 1);
-        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        el.fromDate.value = toISODate(start);
-        el.toDate.value = toISODate(end);
+        const dtstampRaw =
+          `${now.getUTCFullYear()}${pad2(now.getUTCMonth() + 1)}${pad2(now.getUTCDate())}T` +
+          `${pad2(now.getUTCHours())}${pad2(now.getUTCMinutes())}${pad2(now.getUTCSeconds())}Z`;
+
+        const ev = {
+          uid,
+          method: "PUBLISH",
+          sequence: 0,
+          dtstampRaw,
+          status: "CONFIRMED",
+          summary: title || "(empty)",
+          location: location || "",
+          description: "",
+          dtstart,
+          dtend,
+          recurrenceId: null,
+          recurrenceIdKey: "",
+          rrule: "",
+          exdateKeys: [],
+          seriesCancelled: false,
+          ingestTs: Date.now(),
+          source: "manual",
+        };
+
+        state.masters[uid] = ev;
+        if (!state.exceptions[uid]) state.exceptions[uid] = {};
+        saveStore();
+        refreshStateView();
+        renderCalendar();
+
+        el.addTitle.value = "";
+        el.addLocation.value = "";
+        el.addTime.value = "";
+        el.addDuration.value = "";
+      }
+
+      function renderCalendar() {
+        el.calendarGrid.innerHTML = "";
+
+        const y = currentMonth.getFullYear();
+        const m = currentMonth.getMonth();
+        el.monthLabel.textContent =
+          currentMonth.toLocaleString(undefined, { month: "long", year: "numeric" });
+
+        const monthStart = new Date(y, m, 1, 0, 0, 0, 0);
+        const monthEnd = new Date(y, m + 1, 0, 23, 59, 59, 999);
+
+        const rows = renderWindow(monthStart, monthEnd);
+        const map = groupByDate(rows);
+
+        const grid = buildMonthGrid(y, m);
+        for (const cell of grid) {
+          const d = cell.date;
+          const key = toISODate(d);
+          const hasEvents = map[key] && map[key].length > 0;
+
+          const div = document.createElement("div");
+          div.className = "cal-cell" + (cell.inMonth ? "" : " dim") +
+                          (sameDay(d, selectedDate) ? " selected" : "");
+          div.innerHTML = `
+            <div class="cal-date">${d.getDate()}</div>
+            ${hasEvents ? '<div class="dot"></div>' : ""}
+          `;
+          div.addEventListener("click", () => {
+            selectedDate = new Date(d.getTime());
+            renderCalendar();
+          });
+          el.calendarGrid.appendChild(div);
+        }
+
+        renderSelectedDay(map);
+      }
+
+      function renderSelectedDay(map) {
+        const key = toISODate(selectedDate);
+        const rows = map[key] || [];
+        el.selectedDateLabel.textContent =
+          selectedDate.toLocaleDateString(undefined, {
+            weekday: "long", year: "numeric", month: "long", day: "numeric"
+          });
+
+        el.selectedDayEvents.innerHTML = "";
+        if (!rows.length) {
+          el.selectedDayEvents.innerHTML =
+            '<div class="muted small">No events.</div>';
+          return;
+        }
+
+        for (const r of rows) {
+          const item = document.createElement("div");
+          item.className = "event-item";
+          item.innerHTML = `
+            <div><strong>${escapeHtml(r.title || "(empty)")}</strong>
+              <span class="badge">${escapeHtml(r.source)}</span>
+            </div>
+            <div class="small">${escapeHtml(r.time)}</div>
+            <div class="small muted">${escapeHtml(r.place || "")}</div>
+            <div class="small muted mono">UID: ${escapeHtml(r.uid)}</div>
+            <div class="controls" style="margin-top:6px;">
+              <button class="danger" data-uid="${escapeHtml(r.uid)}"
+                      data-anchor="${escapeHtml(r.anchorKey)}"
+                      data-source="${escapeHtml(r.source)}">
+                Delete
+              </button>
+            </div>
+          `;
+          const btn = item.querySelector("button");
+          btn.addEventListener("click", () => {
+            deleteEvent(r.uid, r.anchorKey, r.source);
+          });
+          el.selectedDayEvents.appendChild(item);
+        }
+      }
+
+      function deleteEvent(uid, anchorKey, source) {
+        if (!uid) return;
+
+        const master = state.masters[uid];
+        const exMap = state.exceptions[uid] || {};
+
+        if (source === "master" && master && master.rrule) {
+          // Create exception cancellation for that occurrence
+          const now = new Date();
+          const dtstampRaw =
+            `${now.getUTCFullYear()}${pad2(now.getUTCMonth() + 1)}${pad2(now.getUTCDate())}T` +
+            `${pad2(now.getUTCHours())}${pad2(now.getUTCMinutes())}${pad2(now.getUTCSeconds())}Z`;
+          exMap[anchorKey] = {
+            uid,
+            method: "CANCEL",
+            sequence: (master.sequence || 0) + 1,
+            dtstampRaw,
+            status: "CANCELLED",
+            summary: master.summary,
+            location: master.location,
+            description: "",
+            dtstart: null,
+            dtend: null,
+            recurrenceId: { key: anchorKey },
+            recurrenceIdKey: anchorKey,
+            rrule: "",
+            exdateKeys: [],
+            seriesCancelled: false,
+            ingestTs: Date.now(),
+          };
+          state.exceptions[uid] = exMap;
+        } else if (source.includes("exception") && exMap[anchorKey]) {
+          exMap[anchorKey].status = "CANCELLED";
+          exMap[anchorKey].method = "CANCEL";
+        } else if (master && !master.rrule) {
+          delete state.masters[uid];
+          delete state.exceptions[uid];
+        }
+
+        saveStore();
+        refreshStateView();
+        renderCalendar();
+      }
+
+      function buildMonthGrid(year, month) {
+        const first = new Date(year, month, 1);
+        const startDay = first.getDay(); // 0 Sun
+        const start = new Date(first);
+        start.setDate(first.getDate() - startDay);
+
+        const cells = [];
+        for (let i = 0; i < 42; i++) {
+          const d = new Date(start);
+          d.setDate(start.getDate() + i);
+          cells.push({
+            date: d,
+            inMonth: d.getMonth() === month,
+          });
+        }
+        return cells;
+      }
+
+      function groupByDate(rows) {
+        const map = {};
+        for (const r of rows) {
+          const key = r.dateKey;
+          if (!map[key]) map[key] = [];
+          map[key].push(r);
+        }
+        return map;
+      }
+
+      function sameDay(a, b) {
+        return a.getFullYear() === b.getFullYear() &&
+               a.getMonth() === b.getMonth() &&
+               a.getDate() === b.getDate();
       }
 
       function loadStore() {
@@ -466,9 +644,8 @@
           eCount += Object.keys(state.exceptions[uid] || {}).length;
         }
         const dCount = Object.keys(state.dedup).length;
-
         el.stateStats.textContent =
-          `Masters: ${mCount} | Exceptions: ${eCount} | Dedup fingerprints: ${dCount}`;
+          `Masters: ${mCount} | Exceptions: ${eCount} | Dedup: ${dCount}`;
         el.stateDump.textContent = JSON.stringify(state, null, 2);
       }
 
@@ -558,7 +735,7 @@
           const tr = document.createElement("tr");
           tr.innerHTML = `
             <td>${actionPill(r.action)}</td>
-            <td><span class="uid-trunc" title="${escapeHtml(r.uid || "")}">${escapeHtml(truncUid(r.uid || ""))}</span></td>
+            <td class="mono">${escapeHtml(r.uid || "")}</td>
             <td class="mono">${escapeHtml(r.anchor || "-")}</td>
             <td>${eventDetailsHtml(r.incoming)}</td>
             <td>${r.replacing ? eventDetailsHtml(r.replacing) : "-"}</td>
@@ -603,7 +780,6 @@
         }
         const old = state.masters[ev.uid];
         state.masters[ev.uid] = ev;
-
         if (!old && !state.exceptions[ev.uid]) {
           state.exceptions[ev.uid] = {};
         }
@@ -951,25 +1127,8 @@
           place: src.location || "",
           source: sourceType,
           startEpoch: start.epoch || 0,
+          dateKey: toISODate(new Date(start.epoch || 0)),
         };
-      }
-
-      function drawRenderRows(rows) {
-        el.renderTableBody.innerHTML = "";
-        el.renderSummary.textContent = `Resolved rows: ${rows.length}`;
-        for (const r of rows) {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td><span class="uid-trunc" title="${escapeHtml(r.uid)}">${escapeHtml(truncUid(r.uid))}</span></td>
-            <td class="mono">${escapeHtml(r.anchorKey)}</td>
-            <td>${escapeHtml(r.date)}</td>
-            <td>${escapeHtml(r.time)}</td>
-            <td>${escapeHtml(r.title || "(empty)")}</td>
-            <td>${escapeHtml(r.place || "(empty)")}</td>
-            <td>${escapeHtml(r.source)}</td>
-          `;
-          el.renderTableBody.appendChild(tr);
-        }
       }
 
       function generateAnchorsForWindow(master, fromDate, toDate) {
