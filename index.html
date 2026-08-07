@@ -35,7 +35,7 @@
       padding: 14px;
     }
     .row {
-      
+      display: grid;
       grid-template-columns: 1fr;
       gap: 12px;
     }
@@ -94,7 +94,6 @@
       vertical-align: top;
       text-align: left;
       padding: 8px 6px;
-      word-break: break-word;
     }
     th { color: var(--muted); font-weight: 600; }
     .pill {
@@ -103,6 +102,7 @@
       font-size: 12px;
       display: inline-block;
       border: 1px solid transparent;
+      white-space: nowrap;
     }
     .p-new { color: var(--ok); border-color: #2f6f54; background: #16392c; }
     .p-upd { color: var(--warn); border-color: #6e5a2b; background: #3b3117; }
@@ -121,8 +121,51 @@
       grid-template-columns: 1fr;
       gap: 12px;
     }
+    .grid-2 > * { min-width: 0; }
     @media (min-width: 900px) {
       .grid-2 { grid-template-columns: 1fr 1fr; }
+    }
+    #ingestTable td.mono { overflow-wrap: anywhere; }
+
+    @media (min-width: 761px) {
+      #ingestTable { table-layout: fixed; }
+      #ingestTable th:nth-child(1), #ingestTable td:nth-child(1) { width: 9%; }
+      #ingestTable th:nth-child(2), #ingestTable td:nth-child(2) { width: 18%; }
+      #ingestTable th:nth-child(3), #ingestTable td:nth-child(3) { width: 13%; }
+      #ingestTable th:nth-child(4), #ingestTable td:nth-child(4) { width: 30%; }
+      #ingestTable th:nth-child(5), #ingestTable td:nth-child(5) { width: 30%; }
+    }
+
+    @media (max-width: 760px) {
+      #ingestTable thead { display: none; }
+      #ingestTable,
+      #ingestTable tbody,
+      #ingestTable tr,
+      #ingestTable td {
+        display: block;
+        width: 100%;
+      }
+      #ingestTable tr {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #111623;
+        padding: 10px;
+        margin-bottom: 8px;
+      }
+      #ingestTable td {
+        border-bottom: none;
+        padding: 4px 0;
+      }
+      #ingestTable td::before {
+        content: attr(data-label);
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 2px;
+      }
+      #ingestTable td:first-child::before { content: none; }
     }
     .small { font-size: 12px; }
     .calendar {
@@ -346,9 +389,6 @@
           addDateDirty = true;
         });
         el.addEventBtn.addEventListener("click", addEventFromForm);
-        el.addDate.addEventListener("input", () => {
-          addDateDirty = true;
-        });
 
         el.processBtn.addEventListener("click", () => {
           const txt = el.icsInput.value || "";
@@ -749,22 +789,27 @@
         for (const r of result.rows || []) {
           const tr = document.createElement("tr");
           tr.innerHTML = `
-            <td>${actionPill(r.action)}</td>
-            <td class="mono">${escapeHtml(r.uid || "")}</td>
-            <td class="mono">${escapeHtml(r.anchor || "-")}</td>
-            <td>${eventDetailsHtml(r.incoming)}</td>
-            <td>${r.replacing ? eventDetailsHtml(r.replacing) : "-"}</td>
+            <td data-label="Action">${actionPill(r.action)}</td>
+            <td class="mono" data-label="UID" title="${escapeHtml(r.uid || "")}">${escapeHtml(shortUid(r.uid))}</td>
+            <td class="mono" data-label="Anchor" title="${escapeHtml(r.anchor || "")}">${escapeHtml(r.anchor || "-")}</td>
+            <td data-label="Incoming Details">${eventDetailsHtml(r.incoming)}</td>
+            <td data-label="Replacing">${r.replacing ? eventDetailsHtml(r.replacing) : "-"}</td>
           `;
           el.ingestTableBody.appendChild(tr);
         }
       }
 
+      const ACTION_STYLE = {
+        "new event": { cls: "p-new", label: "NEW" },
+        "update event": { cls: "p-upd", label: "UPDATED" },
+        "deleted event": { cls: "p-del", label: "DELETED" },
+        "stale/duplicate": { cls: "p-stale", label: "STALE" },
+      };
+
       function actionPill(action) {
-        let cls = "p-stale";
-        if (action === "new event") cls = "p-new";
-        if (action === "update event") cls = "p-upd";
-        if (action === "deleted event") cls = "p-del";
-        return `<span class="pill ${cls}">${escapeHtml(action)}</span>`;
+        const s = ACTION_STYLE[action] || { cls: "p-stale", label: action };
+        return `<span class="pill ${s.cls}" title="${escapeHtml(action)}">` +
+               `${escapeHtml(s.label)}</span>`;
       }
 
       function eventDetailsHtml(e) {
