@@ -511,13 +511,15 @@
         el.monthLabel.textContent =
           currentMonth.toLocaleString(undefined, { month: "long", year: "numeric" });
 
-        const monthStart = new Date(y, m, 1, 0, 0, 0, 0);
-        const monthEnd = new Date(y, m + 1, 0, 23, 59, 59, 999);
+        const grid = buildMonthGrid(y, m);
+        const gridStart = new Date(grid[0].date);
+        gridStart.setHours(0, 0, 0, 0);
+        const gridEnd = new Date(grid[grid.length - 1].date);
+        gridEnd.setHours(23, 59, 59, 999);
 
-        const rows = renderWindow(monthStart, monthEnd);
+        const rows = renderWindow(gridStart, gridEnd);
         const map = groupByDate(rows);
 
-        const grid = buildMonthGrid(y, m);
         for (const cell of grid) {
           const d = cell.date;
           const key = toISODate(d);
